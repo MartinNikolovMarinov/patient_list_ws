@@ -40,6 +40,7 @@ static void executeHelpCMD(std::ostream &out) {
     out << "patient_by_id $id \t\t - gets detailed info about a patient by a specific id." << "\n";
     out << "filter_by_age $id \t\t - gets brief info for all patients with a specific age." << "\n";
     out << "filter_by_gender $id \t\t - gets brief info for all patients with a specific gender (M or F)." << "\n";
+    out << "\n";
 }
 
 static void executeInvalidCMD(std::ostream &out) {
@@ -50,30 +51,8 @@ static void executeExitCMD() {
     exit(0);
 }
 
-static void executePatientListCMD(WebSocket::pointer ws, std::ostream &out) {
-    ws->send("{\"setSubscriptions\": {\"public:patients\": \"\"}}");
-    ws->poll(-1);
-    ws->dispatch([](const std::string& message) {
-        // try {
-        //     Response r;
-        //     json rawJson = json::parse(message);
-        //     r.fromJSON(rawJson);
-
-        //     PatientList list;
-        //     for (auto it : r.uriToDataMap) {
-        //         json& rawJson = it.second;
-        //         list.fromJSON(rawJson);
-        //     }
-
-        //     out << message << std::endl;
-        // }
-        // catch(const std::exception& e) {
-        //     std::cerr << e.what() << '\n';
-        // }
-        // catch(...) {
-        //     std::cerr << "unexpected error" << '\n';
-        // }
-    });
+static void requestPatientList(WebSocket::pointer ws, std::ostream &out) {
+    out << "requested list of patients" << "\n";
 }
 
 void CMDCommand::execute(App &app) {
@@ -82,7 +61,7 @@ void CMDCommand::execute(App &app) {
             executeHelpCMD(app.out);
             break;
         case CMDCommandType::PATIENT_LIST:
-            executePatientListCMD(app.ws, app.out);
+            requestPatientList(app.ws, app.out);
             break;
         case CMDCommandType::EXIT:
             executeExitCMD();

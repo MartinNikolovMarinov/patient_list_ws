@@ -1,5 +1,8 @@
 #include "app.h"
 
+#include <thread>
+#include <chrono>
+
 namespace app
 {
     static const char* GREET_MESSAGE = "Greetings. Connection to websocket was successful!";
@@ -28,6 +31,40 @@ namespace app
                 break;
             }
             cmd.execute(*this);
+
+            if (cmd.type != CMDCommandType::HELP &&
+                cmd.type != CMDCommandType::INVALID &&
+                cmd.type != CMDCommandType::EXIT
+            ) {
+                ws->poll();
+                ws->send("{\"setSubscriptions\": {\"public:patients\": \"\"}}");
+                ws->dispatch([&](const std::string& message) {
+                    // TODO: implement proper handler api:
+
+                    // try {
+                    //     Response r;
+                    //     json rawJson = json::parse(message);
+                    //     r.fromJSON(rawJson);
+
+                    //     PatientList list;
+                    //     for (auto it : r.uriToDataMap) {
+                    //         json& rawJson = it.second;
+                    //         list.fromJSON(rawJson);
+                    //     }
+
+                    //     out << message << std::endl;
+                    // }
+                    // catch(const std::exception& e) {
+                    //     std::cerr << e.what() << '\n';
+                    // }
+                    // catch(...) {
+                    //     std::cerr << "unexpected error" << '\n';
+                    // }
+                    this->out << message << "\n";
+                });
+                // std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+                this->out << "AFTER" << "\n";
+            }
         }
     }
 
