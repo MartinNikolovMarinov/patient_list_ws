@@ -23,13 +23,35 @@ static void executePatientListCMD(App &app) {
     string msg = "{\"setSubscriptions\": {\"public:patients\": \"\"}}";
     app.sendQueue->push(msg);
 
-    std::unique_ptr<string> receivedMsg = app.recvQueue->pop(app.timeoutMs);
-    if (receivedMsg != nullptr) {
-        // app.out << "DEBUG: message in main thread" << std::endl << std::endl;
-        app.out << *receivedMsg << std::endl;
-    } else {
-        app.out << "DEBUG: Connection timedout" << std::endl;
+
+    try {
+        std::unique_ptr<string> receivedMsg = app.recvQueue->pop(app.timeoutMs);
+        if (receivedMsg == nullptr) {
+            throw std::invalid_argument("message receive timedout");
+        }
+
+        Response r;
+        json rawJson = json::parse(*receivedMsg);
+        r.fromJSON(rawJson);
+
+        PatientList list;
+        for (auto it : r.uriToDataMap) {
+            json& rawJson = it.second;
+            list.fromJSON(rawJson);
+        }
+
+        list.toStream(app.out);
     }
+    catch(const std::exception& e) {
+        std::cerr << e.what() << '\n';
+    }
+    catch(...) {
+        std::cerr << "unexpected error" << '\n';
+    }
+}
+
+static void executePatientListWithDetailsCMD(App &app) {
+    // TODO:
 }
 
 void CMDCommand::execute(App &app) {
@@ -39,6 +61,9 @@ void CMDCommand::execute(App &app) {
             break;
         case CMDCommandType::PATIENT_LIST:
             executePatientListCMD(app);
+            break;
+        case CMDCommandType::PATIENT_LIST_WITH_DETAILS:
+            executePatientListWithDetailsCMD(app);
             break;
         default:
             executeInvalidCMD(app.out);

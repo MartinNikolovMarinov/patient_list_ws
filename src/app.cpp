@@ -90,6 +90,9 @@ std::shared_ptr<app::CMDCommand> parseCmdFromArgs(int argc, char const *argv[]) 
     if (commandType.compare("patient_list") == 0 && argc == 2) {
         cmd->type = CMDCommandType::PATIENT_LIST;
     }
+    else if (commandType.compare("patient_list_with_details") == 0 && argc == 2) {
+        cmd->type = CMDCommandType::PATIENT_LIST_WITH_DETAILS;
+    }
     else if (commandType.compare("help") == 0) {
         cmd->type = CMDCommandType::HELP;
     }

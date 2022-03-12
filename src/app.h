@@ -6,11 +6,13 @@
 #include <memory>
 #include <mutex>
 #include <queue>
+#include <stdexcept>
 #include <thread>
 #include <unordered_map>
 #include <vector>
 
 #include "easywsclient.h"
+#include "json.hpp"
 
 namespace app
 {
@@ -21,11 +23,15 @@ using ostream = std::ostream;
 using istream = std::istream;
 using thread = std::thread;
 using WebSocket = easywsclient::WebSocket;
+using json = nlohmann::json;
 
 class ThreadSafeQueue;
 class App;
 enum struct CMDCommandType;
 struct CMDCommand;
+struct PatientInfo;
+
+json& safeReadKey(json &obj, const char* key);
 
 class ThreadSafeQueue {
 public:
@@ -78,5 +84,36 @@ struct CMDCommand {
 };
 
 std::shared_ptr<app::CMDCommand> parseCmdFromArgs(int argc, char const *argv[]);
+
+struct Response {
+    std::unordered_map<string, json> uriToDataMap;
+    void fromJSON(json &rawJSON);
+};
+
+struct PatientInfo {
+    string id;
+    string mrn;
+    string sex;
+    string dateOfBirth; // TODO: convert to std::chrono
+    string firstName;
+    string middleName;
+    string lastName;
+    int fractionsTotal;
+    int fractionsCompleted;
+    int weightInKg;
+    bool readyForTreatment;
+    int registrationTime; // TODO: unix timestamp ?
+    string uri;
+
+    void fromJSON(json &rawJSON);
+    void toStream(ostream &out);
+};
+
+struct PatientList {
+    std::vector<PatientInfo> patients;
+
+    void fromJSON(json &rawJSON);
+    void toStream(ostream &out);
+};
 
 }

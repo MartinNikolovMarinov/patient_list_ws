@@ -11,14 +11,4 @@ json& safeReadKey(json &obj, const char* key) {
     return obj[key];
 }
 
-std::vector<std::string> splitStr(const std::string& s, char delimiter) {
-    std::vector<std::string> tokens;
-    std::string token;
-    std::istringstream tokenStream(s);
-    while (std::getline(tokenStream, token, delimiter)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
-
 } // namespace app

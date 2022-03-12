@@ -3,6 +3,16 @@
 namespace app
 {
 
+static const char* UPDATE_SUBSCRIPTIONS_KEY = "updateSubscriptions";
+
+void Response::fromJSON(json &rawJSON) {
+    auto setSubscriptions = safeReadKey(rawJSON, UPDATE_SUBSCRIPTIONS_KEY);
+    for (auto &s : setSubscriptions.items()) {
+        string uri = s.key();
+        this->uriToDataMap[uri] = s.value();
+    }
+}
+
 void PatientInfo::fromJSON(json &rawJSON) {
     this->id = safeReadKey(rawJSON, "id").get<string>();
     this->mrn = safeReadKey(rawJSON, "mrn").get<string>();
@@ -17,6 +27,22 @@ void PatientInfo::fromJSON(json &rawJSON) {
     this->readyForTreatment = safeReadKey(rawJSON, "ready_for_treatment").get<bool>();
     this->registrationTime = safeReadKey(rawJSON, "registration_time").get<int>();
     this->uri = safeReadKey(rawJSON, "uri").get<string>();
+}
+
+void PatientInfo::toStream(ostream &out) {
+    out << "Patient Info (id=" << this->id << ")" << "\n";
+    out << "\t" << "mrn = " << this->mrn << "\n";
+    out << "\t" << "sex = " << this->sex << "\n";
+    out << "\t" << "date_of_birth = " << this->dateOfBirth << "\n";
+    out << "\t" << "first_name = " << this->firstName << "\n";
+    out << "\t" << "middle_name = " << this->middleName << "\n";
+    out << "\t" << "last_name = " << this->lastName << "\n";
+    out << "\t" << "fractions_total = " << this->fractionsTotal << "\n";
+    out << "\t" << "fractions_completed = " << this->fractionsCompleted << "\n";
+    out << "\t" << "weight_in_kg = " << this->weightInKg << "\n";
+    out << "\t" << "ready_for_treatment = " << this->readyForTreatment << "\n";
+    out << "\t" << "registration_time = " << this->registrationTime << "\n";
+    out << "\t" << "uri = " << this->uri << "\n";
 }
 
 void PatientList::fromJSON(json &rawJSON) {
@@ -35,8 +61,12 @@ void PatientList::fromJSON(json &rawJSON) {
     }
 }
 
-size_t PatientList::getPatientsCount() {
-    return this->patients.size();
+void PatientList::toStream(ostream &out) {
+    for (size_t i = 0; i < this->patients.size(); i++) {
+        PatientInfo *p = &this->patients[i];
+        p->toStream(out);
+        out << "\n";
+    }
 }
 
 } // namespace app
