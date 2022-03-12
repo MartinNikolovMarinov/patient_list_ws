@@ -4,6 +4,7 @@ namespace app
 {
 
 static const char* UPDATE_SUBSCRIPTIONS_KEY = "updateSubscriptions";
+static const char* SET_SUBSCRIPTIONS_KEY = "setSubscriptions";
 
 void Response::fromJSON(json &rawJSON) {
     auto setSubscriptions = safeReadKey(rawJSON, UPDATE_SUBSCRIPTIONS_KEY);
@@ -11,6 +12,17 @@ void Response::fromJSON(json &rawJSON) {
         string uri = s.key();
         this->uriToDataMap[uri] = s.value();
     }
+}
+
+string Request::toJSONStr() {
+    json j = "{ \"setSubscriptions\": {} }"_json;
+    for (size_t i = 0; i < this->uris.size(); i++) {
+        auto uri = this->uris[i];
+        j[SET_SUBSCRIPTIONS_KEY][uri.first] = uri.second;
+    }
+
+    string ret = j.dump();
+    return ret;
 }
 
 void PatientInfo::fromJSON(json &rawJSON) {

@@ -20,9 +20,11 @@ static void executeInvalidCMD(std::ostream &out) {
 }
 
 static void executePatientListCMD(App &app) {
-    string msg = "{\"setSubscriptions\": {\"public:patients\": \"\"}}";
+    Request req;
+    auto u = std::pair<string, string>("public:patients", "");
+    req.uris.push_back(u);
+    string msg = req.toJSONStr();
     app.sendQueue->push(msg);
-
 
     try {
         std::unique_ptr<string> receivedMsg = app.recvQueue->pop(app.timeoutMs);
@@ -51,7 +53,56 @@ static void executePatientListCMD(App &app) {
 }
 
 static void executePatientListWithDetailsCMD(App &app) {
-    // TODO:
+    Request req;
+    auto u = std::pair<string, string>("public:patients", "");
+    req.uris.push_back(u);
+    string msg = req.toJSONStr();
+    app.sendQueue->push(msg);
+
+    try {
+        std::unique_ptr<string> receivedMsg = app.recvQueue->pop(app.timeoutMs);
+        if (receivedMsg == nullptr) {
+            throw std::invalid_argument("message receive timedout");
+        }
+
+        Response r;
+        json rawJson = json::parse(*receivedMsg);
+        r.fromJSON(rawJson);
+
+        PatientList list;
+        for (auto it : r.uriToDataMap) {
+            json& rawJson = it.second;
+            list.fromJSON(rawJson);
+        }
+
+        Request detailsReq;
+        for (size_t i = 0; i < list.patients.size(); i++) {
+            auto p = list.patients[i];
+            auto u = std::pair<string, string>(p.uri, "patient");
+            detailsReq.uris.push_back(u);
+        }
+
+        string detailsMsg = detailsReq.toJSONStr();
+        app.sendQueue->push(detailsMsg);
+
+        int count = detailsReq.uris.size();
+        while (count > 0) {
+            std::unique_ptr<string> receivedDetailsMsg = app.recvQueue->pop(app.timeoutMs);
+            if (receivedDetailsMsg == nullptr) {
+                break;
+            }
+
+            // TODO: create model to parse this response:
+            app.out << *receivedDetailsMsg << '\n';
+            count--;
+        }
+    }
+    catch(const std::exception& e) {
+        app.out << e.what() << '\n';
+    }
+    catch(...) {
+        app.out << "unexpected error" << '\n';
+    }
 }
 
 void CMDCommand::execute(App &app) {

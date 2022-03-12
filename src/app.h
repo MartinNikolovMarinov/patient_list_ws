@@ -90,6 +90,11 @@ struct Response {
     void fromJSON(json &rawJSON);
 };
 
+struct Request {
+    std::vector<std::pair<string, string>> uris;
+    string toJSONStr();
+};
+
 struct PatientInfo {
     string id;
     string mrn;
