@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/build/main",
             "args": [
-                "./example.dat"
+                "patient_list"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
