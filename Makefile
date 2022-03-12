@@ -18,7 +18,7 @@ build: ## Build the project in the build folder. Creates ./build folder if it do
 	$(CC) $(CFLAGS) $(DEBUG_DEFINES) $(HEADERS) $(SRC) -o $(OUT_DIR)/$(BIN_NAME)
 
 .PHONY: patient_list
-patient_list: ## List breif patients information.
+patient_list: ## List brief patients information.
 	$(OUT_DIR)/$(BIN_NAME) patient_list
 
 .PHONY: patient_list_with_details
