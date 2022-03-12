@@ -28,8 +28,15 @@ using json = nlohmann::json;
 class ThreadSafeQueue;
 class App;
 enum struct CMDCommandType;
+struct Response;
+struct Request;
 struct CMDCommand;
 struct PatientInfo;
+struct PatientList;
+struct Plan;
+struct Prescription;
+struct Diagnose;
+struct Patient;
 
 json& safeReadKey(json &obj, const char* key);
 
@@ -92,7 +99,7 @@ struct Response {
 
 struct Request {
     std::vector<std::pair<string, string>> uris;
-    string toJSONStr();
+    string toJSONStr() const;
 };
 
 struct PatientInfo {
@@ -118,6 +125,40 @@ struct PatientList {
     std::vector<PatientInfo> patients;
 
     void fromJSON(json &rawJSON);
+    void toStream(ostream &out);
+};
+
+struct Plan {
+    string label;
+
+    void fromJSON(json &rawJSON);
+    void toStream(ostream &out);
+};
+
+struct Prescription {
+    string description;
+    string label;
+    int numFractions;
+    std::vector<Plan> plans;
+
+    void fromJSON(json &rawJSON);
+    void toStream(ostream &out);
+};
+
+struct Diagnose {
+    string description;
+    string label;
+    std::vector<Prescription> prescriptions;
+
+    void fromJSON(json &rawJSON);
+    void toStream(ostream &out);
+};
+
+struct Patient {
+    string uri;
+    std::vector<Diagnose> diagnoses;
+
+    void fromJSON(const string &id, json &rawJSON);
     void toStream(ostream &out);
 };
 

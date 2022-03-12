@@ -19,29 +19,33 @@ static void executeInvalidCMD(std::ostream &out) {
     executeHelpCMD(out);
 }
 
+static void handlePatientListRequest(const App &app, const Request &req, PatientList &list) {
+    string msg = req.toJSONStr();
+    app.sendQueue->push(msg);
+
+    std::unique_ptr<string> receivedMsg = app.recvQueue->pop(app.timeoutMs);
+    if (receivedMsg == nullptr) {
+        throw std::invalid_argument("message receive timedout");
+    }
+
+    Response r;
+    json rawJson = json::parse(*receivedMsg);
+    r.fromJSON(rawJson);
+
+    for (auto it : r.uriToDataMap) {
+        json& rawJson = it.second;
+        list.fromJSON(rawJson);
+    }
+}
+
 static void executePatientListCMD(App &app) {
     Request req;
     auto u = std::pair<string, string>("public:patients", "");
     req.uris.push_back(u);
-    string msg = req.toJSONStr();
-    app.sendQueue->push(msg);
 
     try {
-        std::unique_ptr<string> receivedMsg = app.recvQueue->pop(app.timeoutMs);
-        if (receivedMsg == nullptr) {
-            throw std::invalid_argument("message receive timedout");
-        }
-
-        Response r;
-        json rawJson = json::parse(*receivedMsg);
-        r.fromJSON(rawJson);
-
         PatientList list;
-        for (auto it : r.uriToDataMap) {
-            json& rawJson = it.second;
-            list.fromJSON(rawJson);
-        }
-
+        handlePatientListRequest(app, req, list);
         list.toStream(app.out);
     }
     catch(const std::exception& e) {
@@ -52,28 +56,43 @@ static void executePatientListCMD(App &app) {
     }
 }
 
+static void handlePatientDetailsRequest(const App &app,
+                                        const Request &detailsReq,
+                                        std::vector<Patient> &patients
+) {
+    string detailsMsg = detailsReq.toJSONStr();
+    app.sendQueue->push(detailsMsg);
+
+    int count = detailsReq.uris.size();
+    while (count > 0) {
+        std::unique_ptr<string> receivedDetailsMsg = app.recvQueue->pop(app.timeoutMs);
+        if (receivedDetailsMsg == nullptr) {
+            // should this throw an exception?
+            break;
+        }
+
+        Response r;
+        json rawJson = json::parse(*receivedDetailsMsg);
+        r.fromJSON(rawJson);
+
+        for (auto it : r.uriToDataMap) {
+            json& rawJson = it.second;
+            Patient patient;
+            patient.fromJSON(it.first, rawJson);
+            patients.push_back(patient);
+            count--;
+        }
+    }
+}
+
 static void executePatientListWithDetailsCMD(App &app) {
     Request req;
     auto u = std::pair<string, string>("public:patients", "");
     req.uris.push_back(u);
-    string msg = req.toJSONStr();
-    app.sendQueue->push(msg);
 
     try {
-        std::unique_ptr<string> receivedMsg = app.recvQueue->pop(app.timeoutMs);
-        if (receivedMsg == nullptr) {
-            throw std::invalid_argument("message receive timedout");
-        }
-
-        Response r;
-        json rawJson = json::parse(*receivedMsg);
-        r.fromJSON(rawJson);
-
         PatientList list;
-        for (auto it : r.uriToDataMap) {
-            json& rawJson = it.second;
-            list.fromJSON(rawJson);
-        }
+        handlePatientListRequest(app, req, list);
 
         Request detailsReq;
         for (size_t i = 0; i < list.patients.size(); i++) {
@@ -82,19 +101,12 @@ static void executePatientListWithDetailsCMD(App &app) {
             detailsReq.uris.push_back(u);
         }
 
-        string detailsMsg = detailsReq.toJSONStr();
-        app.sendQueue->push(detailsMsg);
+        std::vector<Patient> patients;
+        handlePatientDetailsRequest(app, detailsReq, patients);
 
-        int count = detailsReq.uris.size();
-        while (count > 0) {
-            std::unique_ptr<string> receivedDetailsMsg = app.recvQueue->pop(app.timeoutMs);
-            if (receivedDetailsMsg == nullptr) {
-                break;
-            }
-
-            // TODO: create model to parse this response:
-            app.out << *receivedDetailsMsg << '\n';
-            count--;
+        for (auto &&p : patients) {
+            p.toStream(app.out);
+            app.out << "\n";
         }
     }
     catch(const std::exception& e) {

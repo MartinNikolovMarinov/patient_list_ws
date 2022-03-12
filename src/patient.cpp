@@ -14,7 +14,7 @@ void Response::fromJSON(json &rawJSON) {
     }
 }
 
-string Request::toJSONStr() {
+string Request::toJSONStr() const {
     json j = "{ \"setSubscriptions\": {} }"_json;
     for (size_t i = 0; i < this->uris.size(); i++) {
         auto uri = this->uris[i];
@@ -78,6 +78,84 @@ void PatientList::toStream(ostream &out) {
         PatientInfo *p = &this->patients[i];
         p->toStream(out);
         out << "\n";
+    }
+}
+
+void Plan::fromJSON(json &rawJSON) {
+    this->label = safeReadKey(rawJSON, "label").get<string>();
+}
+
+void Plan::toStream(ostream &out) {
+    out << "\t\tPlan" << "\n";
+    out << "\t\t\t" << "label = " << this->label << "\n";
+}
+
+void Prescription::fromJSON(json &rawJSON) {
+    this->description = safeReadKey(rawJSON, "description");
+    this->label = safeReadKey(rawJSON, "label");
+    this->numFractions = safeReadKey(rawJSON, "num_fractions");
+
+    json value = safeReadKey(rawJSON, "plans");
+    size_t plansCount = value.size();
+    this->plans.reserve(plansCount);
+    for (json &rawPlan : value) {
+        Plan plan;
+        plan.fromJSON(rawPlan);
+        this->plans.push_back(plan);
+    }
+}
+
+void Prescription::toStream(ostream &out) {
+    out << "\tPrescription" << "\n";
+    out << "\t\t" << "description = " << description << "\n";
+    out << "\t\t" << "label = " << label << "\n";
+    out << "\t\t" << "num_fractions = " << numFractions << "\n";
+
+    for (auto &&p : this->plans) {
+        p.toStream(out);
+    }
+}
+
+void Diagnose::fromJSON(json &rawJSON) {
+    this->description = safeReadKey(rawJSON, "description");
+    this->label = safeReadKey(rawJSON, "label");
+
+    json value = safeReadKey(rawJSON, "prescriptions");
+    size_t prescriptionCount = value.size();
+    this->prescriptions.reserve(prescriptionCount);
+    for (json &rawPerscription : value) {
+        Prescription perscription;
+        perscription.fromJSON(rawPerscription);
+        this->prescriptions.push_back(perscription);
+    }
+}
+
+void Diagnose::toStream(ostream &out) {
+    out << "Diagnose" << "\n";
+    out << "\t" << "description = " << description << "\n";
+    out << "\t" << "label = " << label << "\n";
+
+    for (auto &&p : this->prescriptions) {
+        p.toStream(out);
+    }
+}
+
+void Patient::fromJSON(const string &id, json &rawJSON) {
+    this->uri = id;
+    json value = safeReadKey(rawJSON, "diagnoses");
+    size_t diagnosisCount = value.size();
+    this->diagnoses.reserve(diagnosisCount);
+    for (json &rawDiagnose : value) {
+        Diagnose diagnose;
+        diagnose.fromJSON(rawDiagnose);
+        this->diagnoses.push_back(diagnose);
+    }
+}
+
+void Patient::toStream(ostream &out) {
+    out << "Patient (uri=" << this->uri << ")" << "\n";
+    for (auto &&p : this->diagnoses) {
+        p.toStream(out);
     }
 }
 
