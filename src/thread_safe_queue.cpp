@@ -22,6 +22,12 @@ public:
         this->condVar.notify_one();
     }
 
+    /**
+     * Pops a message from the queue in a thread safe way.
+     * Conditionally blocks for some time period if the queue is empty.
+     * If the time period is negative it will block until some other
+     * thread pushes data to the queue.
+    */
     std::unique_ptr<string> pop(int timeoutMillis) override {
         std::unique_lock<std::mutex> lock(this->mux);
 

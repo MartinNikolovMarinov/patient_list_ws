@@ -30,6 +30,7 @@ bool App::init(std::shared_ptr<CMDCommand> cmd) {
     if (this->cmd->type == CMDCommandType::HELP ||
         this->cmd->type == CMDCommandType::INVALID
     ) {
+        // Some commands are only local and don't need a websocket connection.
         return true;
     }
 
@@ -40,6 +41,10 @@ bool App::init(std::shared_ptr<CMDCommand> cmd) {
 
     this->running = true;
 
+    /**
+     * The network thread reads messages from the send queue and sends them down the websocket.
+     * At some polling interval receives dispatched messages and sends them down the recv queue.
+    */
     this->networkThread = new std::thread([&] {
         static const int pollingInterval = 200;
         while (this->running) {
@@ -75,32 +80,6 @@ void App::run() {
         this->cmd->execute(*this);
     }
     this->running = false;
-}
-
-std::shared_ptr<app::CMDCommand> parseCmdFromArgs(int argc, char const *argv[]) {
-    std::shared_ptr<app::CMDCommand> cmd = std::make_shared<app::CMDCommand>();
-
-    if (argc < 2) {
-        cmd->type = CMDCommandType::INVALID;
-        return cmd;
-    }
-
-    std::string commandType = std::string(argv[1]);
-
-    if (commandType.compare("patient_list") == 0 && argc == 2) {
-        cmd->type = CMDCommandType::PATIENT_LIST;
-    }
-    else if (commandType.compare("patient_list_with_details") == 0 && argc == 2) {
-        cmd->type = CMDCommandType::PATIENT_LIST_WITH_DETAILS;
-    }
-    else if (commandType.compare("help") == 0) {
-        cmd->type = CMDCommandType::HELP;
-    }
-    else {
-        cmd->type = CMDCommandType::INVALID;
-    }
-
-    return cmd;
 }
 
 } // namespace app

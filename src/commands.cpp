@@ -134,4 +134,30 @@ void CMDCommand::execute(App &app) {
     }
 }
 
+std::shared_ptr<app::CMDCommand> parseCmdFromArgs(int argc, char const *argv[]) {
+    std::shared_ptr<app::CMDCommand> cmd = std::make_shared<app::CMDCommand>();
+
+    if (argc < 2) {
+        cmd->type = CMDCommandType::INVALID;
+        return cmd;
+    }
+
+    std::string commandType = std::string(argv[1]);
+
+    if (commandType.compare("patient_list") == 0 && argc == 2) {
+        cmd->type = CMDCommandType::PATIENT_LIST;
+    }
+    else if (commandType.compare("patient_list_with_details") == 0 && argc == 2) {
+        cmd->type = CMDCommandType::PATIENT_LIST_WITH_DETAILS;
+    }
+    else if (commandType.compare("help") == 0) {
+        cmd->type = CMDCommandType::HELP;
+    }
+    else {
+        cmd->type = CMDCommandType::INVALID;
+    }
+
+    return cmd;
+}
+
 } // namespace app
